@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id                    String         @id @default(uuid())
+  email                 String         @unique
+  username              String         @unique
+  password              String
+  firstName             String
+  lastName              String
+  role                  Role           @default(USER)
+  comments              Comment[]
+  followers             Follow[]       @relation("followers")
+  following             Follow[]       @relation("following")
+  likes                 Like[]
+  receivedNotifications Notification[] @relation("receivedNotifications")
+  sentNotifications     Notification[] @relation("sentNotifications")
+  posts                 Post[]
+  profile               Profile?
+}
+
+model Profile {
+  id         String            @id @default(uuid())
+  userId     String            @unique
+  bio        String?           @db.VarChar(160)
+  avatarUrl  String?
+  website    String?
+  location   String?
+  visibility ProfileVisibility @default(PUBLIC)
+  user       User              @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id           String         @id @default(uuid())
+  content      String         @db.VarChar(280)
+  imageUrl     String?
+  category     PostCategory   @default(GENERAL)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  authorId     String
+  comments     Comment[]
+  likes        Like[]
+  notification Notification[]
+  author       User           @relation(fields: [authorId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String   @db.VarChar(200)
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
+  authorId  String
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  followerId  String
+  followingId String
+  follower    User     @relation("followers", fields: [followerId], references: [id])
+  following   User     @relation("following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id               String           @id @default(uuid())
+  notificationType NotificationType
+  message          String           @db.VarChar(200)
+  isRead           Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  recipientId      String
+  senderId         String
+  postId           String?
+  post             Post?            @relation(fields: [postId], references: [id])
+  recipient        User             @relation("receivedNotifications", fields: [recipientId], references: [id])
+  sender           User             @relation("sentNotifications", fields: [senderId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+  FOLLOWERS_ONLY
+}
+
+enum PostCategory {
+  GENERAL
+  ANNOUNCEMENT
+  QUESTION
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  COMMENT
+}
