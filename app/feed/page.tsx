@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { ImageIcon, X, LogOut } from "lucide-react";
+import { ImageIcon, X } from "lucide-react";
 import ContentCard from "@/components/contentCard";
 import Image from "next/image";
 
@@ -82,7 +81,6 @@ const mockPosts = [
 ];
 
 export default function Feed() {
-  const router = useRouter();
   const [postContent, setPostContent] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -152,14 +150,6 @@ export default function Feed() {
     }, 1000);
   };
 
-  const handleLogout = () => {
-    // TODO: Implement your logout logic here
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    console.log("Logging out...");
-    router.push("/");
-  };
-
   const handleLike = (postId: string) => {
     // TODO: Implement like functionality
     console.log("Liked post:", postId);
@@ -178,23 +168,11 @@ export default function Feed() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto py-8 px-4">
-        {/* Header with Logout */}
-        <div className="mb-8 flex items-center justify-between">
+        {/* Header */}
+        <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Feed</h1>
-            <p className="text-gray-600 mt-2">
-              Share your thoughts and see what others are up to
-            </p>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-            className="flex items-center space-x-2 text-gray-600 hover:text-red-600 hover:border-red-300"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </Button>
         </div>
 
         {/* Create Post Card */}
