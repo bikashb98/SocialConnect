@@ -47,24 +47,6 @@ export default function Appbar({ user }: AppbarProps) {
             <h1 className="text-xl font-bold text-blue-600">SocialConnect</h1>
           </div>
 
-          {/* Navigation Links (Optional) */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/feed")}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              Feed
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => console.log("Explore clicked")}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              Explore
-            </Button>
-          </div>
-
           {/* Right Side - Profile & Logout */}
           <div className="flex items-center space-x-3">
             {/* Profile Section */}
