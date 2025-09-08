@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
 import { ImageIcon, X } from "lucide-react";
 import ContentCard from "@/components/contentCard";
 import Image from "next/image";
+import axios from "axios";
 
 // Mock data for demonstration
 const mockPosts = [
@@ -91,6 +93,19 @@ const mockPosts = [
 ];
 
 export default function Feed() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const verifiedUser = localStorage.getItem("userId");
+    if (!verifiedUser) {
+      router.push("/");
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
+
   const [postContent, setPostContent] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -99,6 +114,18 @@ export default function Feed() {
   >("general");
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -118,7 +145,7 @@ export default function Feed() {
       // Validate file size
       const maxSize = 2 * 1024 * 1024; // 2MB
       if (file.size > maxSize) {
-        alert("File too large. Maximum size is 5MB.");
+        alert("File too large. Maximum size is 2MB.");
         return;
       }
 
@@ -144,25 +171,61 @@ export default function Feed() {
 
     setIsPosting(true);
 
-    // TODO: Implement your post creation logic here
-    console.log("Creating post:", {
-      content: postContent,
-      image: selectedImage,
-      category: selectedCategory,
-    });
+    try {
+      // Get user ID from localStorage (you might want to use a different auth method)
+      const userId = localStorage.getItem("userId");
 
-    // Simulate API call
-    setTimeout(() => {
-      setPostContent("");
-      setSelectedImage(null);
-      setImagePreview("");
-      setSelectedCategory("general");
-      setIsPosting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      // Convert image to base64 if present
+      let imageBase64 = null;
+      if (selectedImage) {
+        const reader = new FileReader();
+        imageBase64 = await new Promise((resolve) => {
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            // Remove the data:image/...;base64, prefix
+            resolve(result.split(",")[1]);
+          };
+          reader.readAsDataURL(selectedImage);
+        });
       }
-      alert("Post created successfully!");
-    }, 1000);
+
+      // Prepare the data according to the backend schema
+      const postData = {
+        content: postContent,
+        category: selectedCategory.toUpperCase(), // Backend expects uppercase
+        image: imageBase64,
+        authorId: userId,
+      };
+
+      // Make API call to create post
+      const response = await axios.post("/api/posts", postData, {});
+
+      if (response.status === 201) {
+        // Reset form on success
+        setPostContent("");
+        setSelectedImage(null);
+        setImagePreview("");
+        setSelectedCategory("general");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        alert("Post created successfully!");
+
+        // Optionally refresh the feed or add the new post to the state
+        // You might want to refetch posts here
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error || "Failed to create post";
+        alert(errorMessage);
+      } else {
+        alert("An unexpected error occurred");
+      }
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleLike = (postId: string) => {

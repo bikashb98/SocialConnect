@@ -46,7 +46,6 @@ export async function POST(req: Request) {
       imageUrl = data.publicUrl;
     }
 
-    // Save post in DB
     const newPost = await prisma.post.create({
       data: {
         content,

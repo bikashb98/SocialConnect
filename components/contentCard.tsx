@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,22 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import axios from "axios";
+
+interface Comment {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+    profile?: {
+      avatarUrl?: string;
+    };
+  };
+}
 
 interface ContentCardProps {
   post: {
@@ -60,6 +76,32 @@ export default function ContentCard({
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isCommenting, setIsCommenting] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(
+    post._count?.likes || post.likes?.length || 0,
+  );
+  const [isLiking, setIsLiking] = useState(false);
+
+  // Check initial like status
+  useEffect(() => {
+    const checkLikeStatus = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+
+      try {
+        const response = await axios.get(
+          `/api/likes?postId=${post.id}&userId=${userId}`,
+        );
+        setIsLiked(response.data.liked);
+      } catch (error) {
+        console.error("Error checking like status:", error);
+      }
+    };
+
+    checkLikeStatus();
+  }, [post.id]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -81,6 +123,24 @@ export default function ContentCard({
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  const formatCommentDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60),
+    );
+
+    if (diffInMinutes < 1) {
+      return "now";
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h`;
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}d`;
+    }
   };
 
   const getCategoryStyle = (
@@ -109,31 +169,123 @@ export default function ContentCard({
     }
   };
 
-  const likesCount = post._count?.likes || post.likes?.length || 0;
   const commentsCount = post._count?.comments || post.comments?.length || 0;
 
-  const handleCommentClick = () => {
+  const handleCommentClick = async () => {
     setShowComments(!showComments);
     onComment?.(post.id);
+
+    // Load comments when expanding
+    if (!showComments && comments.length === 0) {
+      await loadComments();
+    }
   };
 
-  const handleCommentSubmit = () => {
+  const handleLikeClick = async () => {
+    if (isLiking) return;
+
+    setIsLiking(true);
+
+    try {
+      // Get user ID from localStorage (you might want to use a different auth method)
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert("Please log in to like posts");
+        setIsLiking(false);
+        return;
+      }
+
+      const likeData = {
+        postId: post.id,
+        userId,
+      };
+
+      const response = await axios.post("/api/likes", likeData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        const { liked } = response.data;
+        setIsLiked(liked);
+        setLikesCount((prev) => (liked ? prev + 1 : prev - 1));
+
+        // Optionally trigger a callback to update parent component
+        onLike?.(post.id);
+      }
+    } catch (error) {
+      console.error("Error handling like:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error || "Failed to update like";
+        alert(errorMessage);
+      } else {
+        alert("An unexpected error occurred");
+      }
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const loadComments = async () => {
+    setLoadingComments(true);
+    try {
+      const response = await axios.get(`/api/comments?postId=${post.id}`);
+      setComments(response.data.comments);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
 
     setIsCommenting(true);
 
-    // TODO: Implement your comment submission logic here
-    console.log("Submitting comment:", {
-      postId: post.id,
-      comment: commentText,
-    });
+    try {
+      // Get user ID from localStorage (you might want to use a different auth method)
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert("Please log in to comment");
+        setIsCommenting(false);
+        return;
+      }
 
-    // Simulate API call
-    setTimeout(() => {
-      setCommentText("");
+      const commentData = {
+        content: commentText,
+        postId: post.id,
+        authorId: userId,
+      };
+
+      const response = await axios.post("/api/comments", commentData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 201) {
+        // Add the new comment to the local state
+        setComments([response.data.comment, ...comments]);
+        setCommentText("");
+
+        // Optionally trigger a callback to update parent component
+        onComment?.(post.id);
+      }
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error || "Failed to submit comment";
+        alert(errorMessage);
+      } else {
+        alert("An unexpected error occurred");
+      }
+    } finally {
       setIsCommenting(false);
-      // You can add the new comment to the post here
-    }, 500);
+    }
   };
 
   return (
@@ -239,11 +391,16 @@ export default function ContentCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onLike?.(post.id)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-red-500 hover:bg-red-50"
+              onClick={handleLikeClick}
+              disabled={isLiking}
+              className={`flex items-center space-x-2 ${
+                isLiked
+                  ? "text-red-500 hover:text-red-600 hover:bg-red-50"
+                  : "text-gray-600 hover:text-red-500 hover:bg-red-50"
+              }`}
             >
-              <Heart className="h-5 w-5" />
-              <span>Like</span>
+              <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
+              <span>{isLiking ? "..." : "Like"}</span>
             </Button>
 
             <Button
@@ -261,7 +418,8 @@ export default function ContentCard({
         {/* Comment Section */}
         {showComments && (
           <div className="mt-4 pt-4 border-t">
-            <div className="flex items-start space-x-3">
+            {/* Comment Input */}
+            <div className="flex items-start space-x-3 mb-4">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" alt="Your avatar" />
                 <AvatarFallback className="bg-gray-500 text-white text-xs">
@@ -288,6 +446,51 @@ export default function ContentCard({
                 </div>
               </div>
             </div>
+
+            {/* Comments List */}
+            {loadingComments ? (
+              <div className="text-center py-4 text-gray-500">
+                Loading comments...
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-3">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex items-start space-x-3">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage
+                        src={comment.author.profile?.avatarUrl}
+                        alt={`${comment.author.firstName} ${comment.author.lastName}`}
+                      />
+                      <AvatarFallback className="bg-blue-500 text-white text-xs">
+                        {getInitials(
+                          comment.author.firstName,
+                          comment.author.lastName,
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-gray-100 rounded-lg px-3 py-2">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="font-semibold text-sm">
+                            {comment.author.firstName} {comment.author.lastName}
+                          </span>
+                          <span className="text-gray-500 text-xs">
+                            {formatCommentDate(comment.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-900">
+                          {comment.content}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500 text-sm">
+                No comments yet. Be the first to comment!
+              </div>
+            )}
           </div>
         )}
       </CardContent>
