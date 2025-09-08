@@ -115,8 +115,8 @@ export default function Feed() {
         return;
       }
 
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Validate file size
+      const maxSize = 2 * 1024 * 1024; // 2MB
       if (file.size > maxSize) {
         alert("File too large. Maximum size is 5MB.");
         return;
@@ -175,9 +175,14 @@ export default function Feed() {
     console.log("Comment on post:", postId);
   };
 
-  const handleShare = (postId: string) => {
-    // TODO: Implement share functionality
-    console.log("Share post:", postId);
+  const handleEdit = (postId: string) => {
+    // TODO: Implement edit functionality
+    console.log("Edit post:", postId);
+  };
+
+  const handleDelete = (postId: string) => {
+    // TODO: Implement delete functionality
+    console.log("Delete post:", postId);
   };
 
   return (
@@ -302,7 +307,8 @@ export default function Feed() {
               post={post}
               onLike={handleLike}
               onComment={handleComment}
-              onShare={handleShare}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           ))}
         </div>
