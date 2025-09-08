@@ -20,6 +20,7 @@ interface ContentCardProps {
     content: string;
     imageUrl?: string;
     createdAt: string;
+    category: "general" | "announcement" | "question";
     author: {
       id: string;
       firstName: string;
@@ -73,6 +74,32 @@ export default function ContentCard({
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  const getCategoryStyle = (
+    category: "general" | "announcement" | "question",
+  ) => {
+    switch (category) {
+      case "announcement":
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          label: "Announcement",
+        };
+      case "question":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-800",
+          label: "Question",
+        };
+      case "general":
+      default:
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-800",
+          label: "General",
+        };
+    }
+  };
+
   const likesCount = post._count?.likes || post.likes?.length || 0;
   const commentsCount = post._count?.comments || post.comments?.length || 0;
 
@@ -118,9 +145,18 @@ export default function ContentCard({
               <p className="font-semibold text-sm">
                 {post.author.firstName} {post.author.lastName}
               </p>
-              <p className="text-gray-500 text-xs">
-                @{post.author.username} • {formatDate(post.createdAt)}
-              </p>
+              <div className="flex items-center space-x-2">
+                <p className="text-gray-500 text-xs">
+                  @{post.author.username} • {formatDate(post.createdAt)}
+                </p>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    getCategoryStyle(post.category).bg
+                  } ${getCategoryStyle(post.category).text}`}
+                >
+                  {getCategoryStyle(post.category).label}
+                </span>
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageIcon, X } from "lucide-react";
 import ContentCard from "@/components/contentCard";
 import Image from "next/image";
@@ -17,6 +24,7 @@ const mockPosts = [
     content:
       "Just finished building an amazing React component! The feeling when everything clicks into place is unmatched 🚀",
     imageUrl: "",
+    category: "general" as const,
     createdAt: "2025-09-08T10:30:00Z",
     author: {
       id: "1",
@@ -39,6 +47,7 @@ const mockPosts = [
     content:
       "Beautiful sunset from my office window today. Sometimes you need to pause and appreciate the little things in life.",
     imageUrl: "",
+    category: "general" as const,
     createdAt: "2025-09-08T08:15:00Z",
     author: {
       id: "2",
@@ -61,6 +70,7 @@ const mockPosts = [
     content:
       "Learning Next.js has been an incredible journey. The app router makes everything so much cleaner!",
     imageUrl: "",
+    category: "question" as const,
     createdAt: "2025-09-08T06:45:00Z",
     author: {
       id: "3",
@@ -84,6 +94,9 @@ export default function Feed() {
   const [postContent, setPostContent] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<
+    "general" | "announcement" | "question"
+  >("general");
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,6 +148,7 @@ export default function Feed() {
     console.log("Creating post:", {
       content: postContent,
       image: selectedImage,
+      category: selectedCategory,
     });
 
     // Simulate API call
@@ -142,6 +156,7 @@ export default function Feed() {
       setPostContent("");
       setSelectedImage(null);
       setImagePreview("");
+      setSelectedCategory("general");
       setIsPosting(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -198,6 +213,30 @@ export default function Feed() {
                 onChange={(e) => setPostContent(e.target.value)}
                 className="min-h-[100px] resize-none border-0 p-0 focus-visible:ring-0 text-lg placeholder:text-gray-400"
               />
+
+              {/* Category Selection */}
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Category:
+                </label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={(value) =>
+                    setSelectedCategory(
+                      value as "general" | "announcement" | "question",
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="announcement">Announcement</SelectItem>
+                    <SelectItem value="question">Question</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Image Preview */}
               {imagePreview && (
