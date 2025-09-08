@@ -4,9 +4,43 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
 
 export default function Login() {
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("/api/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      if (response.status === 200) {
+        const { access_token, refresh_token, userId } = response.data;
+        localStorage.setItem("access_token", access_token);
+        localStorage.setItem("refresh_token", refresh_token);
+        localStorage.setItem("userId", userId);
+
+        router.push("/feed");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
@@ -39,19 +73,26 @@ export default function Login() {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Input
+                    name="email"
+                    onChange={handleInputChange}
                     type="email"
-                    placeholder="Email or phone number"
+                    placeholder="Email "
                     className="h-12 text-lg"
                   />
                 </div>
                 <div className="space-y-2">
                   <Input
+                    name="password"
+                    onChange={handleInputChange}
                     type="password"
                     placeholder="Password"
                     className="h-12 text-lg"
                   />
                 </div>
-                <Button className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={handleSubmit}
+                  className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700"
+                >
                   Log In
                 </Button>
                 <div className="text-center">
