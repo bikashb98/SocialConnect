@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,18 +39,35 @@ export default function Register() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const result = await response.json();
+      if (error) {
+        setMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
 
-      if (response.ok) {
-        setMessage("Registration successful!");
+      const authId = data.user?.id;
+      if (!authId) {
+        setMessage("Failed to retrieve user ID from Supabase");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await axios.post("/api/auth/register", {
+        authId: authId,
+        firstName: formData.firstname,
+        lastName: formData.lastname,
+        username: formData.username,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        setMessage(
+          "Account created! Please check your email to verify your account.",
+        );
         setFormData({
           firstname: "",
           lastname: "",
@@ -56,11 +75,8 @@ export default function Register() {
           email: "",
           password: "",
         });
-      } else {
-        setMessage(result.error || "Registration failed");
       }
-    } catch (error) {
-      console.error("Registration error:", error);
+    } catch {
       setMessage("An error occurred during registration");
     } finally {
       setIsLoading(false);
@@ -90,7 +106,7 @@ export default function Register() {
                   value={formData.firstname}
                   onChange={handleInputChange}
                   required
-                  placeholder="John"
+                  placeholder="Bikash"
                 />
               </div>
               <div className="space-y-2">
@@ -102,7 +118,7 @@ export default function Register() {
                   value={formData.lastname}
                   onChange={handleInputChange}
                   required
-                  placeholder="Doe"
+                  placeholder="Roy"
                 />
               </div>
             </div>
@@ -116,7 +132,7 @@ export default function Register() {
                 value={formData.username}
                 onChange={handleInputChange}
                 required
-                placeholder="johndoe"
+                placeholder="bikash_13"
               />
             </div>
 
@@ -129,7 +145,7 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                placeholder="john@example.com"
+                placeholder="bikash@example.com"
               />
             </div>
 
@@ -142,7 +158,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                placeholder="••••••••"
+                placeholder="Password"
               />
             </div>
 

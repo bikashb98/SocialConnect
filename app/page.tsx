@@ -1,9 +1,13 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-6xl flex items-center justify-between">
@@ -58,6 +62,7 @@ export default function Login() {
                 <Separator className="my-4" />
                 <div className="text-center">
                   <Button
+                    onClick={() => router.push("/signup")}
                     variant="outline"
                     className="bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600 font-semibold px-8 py-3"
                   >
