@@ -20,10 +20,9 @@ export default function Appbar({ user }: AppbarProps) {
   const router = useRouter();
 
   const handleLogout = () => {
-    // TODO: Implement your logout logic here
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
-    console.log("Logging out...");
+    localStorage.removeItem("userId");
     router.push("/");
   };
 
@@ -78,7 +77,6 @@ export default function Appbar({ user }: AppbarProps) {
               </Button>
             </div>
 
-            {/* Logout Button */}
             <Button
               onClick={handleLogout}
               variant="outline"

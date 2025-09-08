@@ -13,7 +13,6 @@ import {
 import {
   Heart,
   MessageCircle,
-  Share,
   MoreHorizontal,
   Send,
   Edit,
@@ -47,7 +46,6 @@ interface ContentCardProps {
   };
   onLike?: (postId: string) => void;
   onComment?: (postId: string) => void;
-  onShare?: (postId: string) => void;
   onEdit?: (postId: string) => void;
   onDelete?: (postId: string) => void;
 }
@@ -56,7 +54,6 @@ export default function ContentCard({
   post,
   onLike,
   onComment,
-  onShare,
   onEdit,
   onDelete,
 }: ContentCardProps) {
@@ -257,16 +254,6 @@ export default function ContentCard({
             >
               <MessageCircle className="h-5 w-5" />
               <span>Comment</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onShare?.(post.id)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-green-500 hover:bg-green-50"
-            >
-              <Share className="h-5 w-5" />
-              <span>Share</span>
             </Button>
           </div>
         </div>
